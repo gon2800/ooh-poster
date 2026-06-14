@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>OOH Insight Now — 포스팅 생성기</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0d1a; --surface: #111527; --surface2: #1a1f38;
+    --border: #2a2f52; --accent: #4a6cf7; --accent2: #00c6ae;
+    --text: #e8eaf6; --text2: #8890b8; --text3: #555e8a;
+    --danger: #f7564a; --success: #00c6ae;
+    --radius: 14px; --radius-sm: 10px;
+  }
+  body { font-family: 'Apple SD Gothic Neo','Noto Sans KR',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding-bottom:40px; }
+
+  header { padding:16px 20px; border-bottom:1px solid var(--border); background:var(--surface); display:flex; align-items:center; gap:10px; position:sticky; top:0; z-index:10; }
+  .logo-dot { width:9px; height:9px; background:var(--accent); border-radius:50%; box-shadow:0 0 8px var(--accent); flex-shrink:0; }
+  header h1 { font-size:14px; font-weight:600; }
+  header span { font-size:12px; color:var(--text3); margin-left:2px; }
+
+  .steps { display:flex; padding:0 20px; margin:20px 0 0; }
+  .step-btn { flex:1; padding:10px 4px; background:none; border:none; border-bottom:2px solid var(--border); color:var(--text3); font-family:inherit; font-size:12px; font-weight:500; cursor:pointer; transition:all 0.2s; text-align:center; }
+  .step-btn.active { border-bottom-color:var(--accent); color:var(--accent); }
+  .step-num { display:inline-flex; width:18px; height:18px; border-radius:50%; background:var(--surface2); align-items:center; justify-content:center; font-size:10px; margin-right:4px; transition:background 0.2s; }
+  .step-btn.active .step-num { background:var(--accent); color:white; }
+  .step-btn.done .step-num { background:var(--accent2); color:#0a0d1a; }
+  .step-btn.done { color:var(--accent2); border-bottom-color:var(--accent2); }
+
+  .panel { display:none; padding:20px; }
+  .panel.active { display:block; }
+
+  .section-label { font-size:11px; font-weight:600; color:var(--text3); letter-spacing:1px; text-transform:uppercase; margin-bottom:10px; }
+
+  .source-tabs { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:20px; }
+  .tab-btn { padding:12px 8px; border-radius:var(--radius-sm); border:1.5px solid var(--border); background:var(--surface); color:var(--text2); font-size:13px; font-family:inherit; cursor:pointer; transition:all 0.15s; text-align:center; }
+  .tab-btn.active { background:rgba(74,108,247,0.12); border-color:var(--accent); color:var(--text); font-weight:600; }
+
+  .url-list { display:flex; flex-direction:column; gap:10px; }
+  .url-row { display:flex; gap:8px; align-items:center; }
+  .url-num { width:22px; height:22px; border-radius:50%; background:var(--surface2); border:1px solid var(--border); color:var(--text3); font-size:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+
+  input[type="url"], input[type="text"], textarea { width:100%; background:var(--surface2); border:1.5px solid var(--border); border-radius:var(--radius-sm); padding:13px 14px; color:var(--text); font-family:inherit; font-size:14px; outline:none; transition:border-color 0.15s; -webkit-appearance:none; }
+  input:focus, textarea:focus { border-color:var(--accent); }
+  input::placeholder, textarea::placeholder { color:var(--text3); }
+  textarea { resize:none; line-height:1.6; min-height:90px; }
+
+  /* Photo grid */
+  .photo-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:8px; }
+  .photo-thumb { aspect-ratio:1; border-radius:var(--radius-sm); overflow:hidden; position:relative; background:var(--surface2); border:1.5px solid var(--border); }
+  .photo-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+  .photo-remove { position:absolute; top:4px; right:4px; width:22px; height:22px; border-radius:50%; background:rgba(0,0,0,0.7); border:none; color:white; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .photo-add { aspect-ratio:1; border-radius:var(--radius-sm); border:1.5px dashed var(--border); background:var(--surface); display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; color:var(--text3); font-size:24px; transition:all 0.15s; position:relative; }
+  .photo-add input { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+  .photo-add-label { font-size:10px; margin-top:4px; color:var(--text3); }
+  .photo-count { font-size:11px; color:var(--text3); text-align:right; }
+
+  /* Video */
+  .video-drop { border:1.5px dashed var(--border); border-radius:var(--radius); padding:32px 20px; text-align:center; cursor:pointer; transition:all 0.15s; position:relative; background:var(--surface); }
+  .video-drop:hover { border-color:var(--accent); background:rgba(74,108,247,0.05); }
+  .video-drop input { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+  .video-drop-icon { font-size:32px; margin-bottom:8px; }
+  .video-drop-text { font-size:13px; color:var(--text2); }
+  .video-drop-sub { font-size:11px; color:var(--text3); margin-top:4px; }
+
+  .video-preview { display:none; margin-top:12px; border-radius:var(--radius); overflow:hidden; background:var(--surface2); border:1px solid var(--border); }
+  .video-preview.visible { display:block; }
+  .video-preview video { width:100%; max-height:240px; display:block; background:#000; }
+  .video-info { padding:10px 14px; display:flex; align-items:center; justify-content:space-between; }
+  .video-name { font-size:12px; color:var(--text2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
+  .video-size { font-size:11px; color:var(--text3); margin-left:8px; flex-shrink:0; }
+  .video-remove { background:none; border:none; color:var(--text3); cursor:pointer; font-size:18px; padding:0 4px; margin-left:8px; }
+  .video-remove:hover { color:var(--danger); }
+
+  /* Video description (optional) */
+  .video-desc-toggle { display:flex; align-items:center; gap:8px; margin-top:12px; cursor:pointer; }
+  .video-desc-toggle input[type="checkbox"] { width:16px; height:16px; accent-color:var(--accent); cursor:pointer; }
+  .video-desc-toggle label { font-size:12px; color:var(--text2); cursor:pointer; }
+  .video-desc-area { display:none; margin-top:8px; }
+  .video-desc-area.visible { display:block; }
+
+  .context-block { margin-top:16px; }
+
+  .btn-generate { width:100%; padding:16px; background:var(--accent); color:white; border:none; border-radius:var(--radius); font-size:15px; font-weight:700; font-family:inherit; cursor:pointer; margin-top:20px; display:flex; align-items:center; justify-content:center; gap:8px; transition:background 0.15s; -webkit-tap-highlight-color:transparent; }
+  .btn-generate:active { background:#3a5ce6; }
+  .btn-generate:disabled { opacity:0.5; }
+  .spinner { width:18px; height:18px; border:2px solid rgba(255,255,255,0.3); border-top-color:white; border-radius:50%; animation:spin 0.7s linear infinite; display:none; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* Preview */
+  .fb-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; margin-bottom:16px; }
+  .fb-header { padding:12px 14px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; }
+  .fb-avatar { width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:white; flex-shrink:0; }
+  .fb-name { font-size:13px; font-weight:600; }
+  .fb-time { font-size:11px; color:var(--text3); }
+  .fb-body { padding:14px; }
+  .preview-empty { text-align:center; padding:40px 20px; color:var(--text3); }
+  .preview-empty .ei { font-size:36px; margin-bottom:10px; }
+  .preview-empty p { font-size:13px; line-height:1.7; }
+  .post-text { font-size:14px; line-height:1.85; white-space:pre-wrap; color:var(--text); display:none; }
+  .post-text.visible { display:block; }
+  .post-textarea { font-size:14px; line-height:1.85; min-height:200px; display:none; border-color:var(--accent); }
+  .post-textarea.visible { display:block; }
+
+  .photo-strip { display:none; gap:4px; padding:0 14px 14px; overflow-x:auto; }
+  .photo-strip.visible { display:flex; }
+  .photo-strip img { height:80px; width:80px; object-fit:cover; border-radius:8px; flex-shrink:0; }
+
+  .video-strip { display:none; padding:0 14px 14px; }
+  .video-strip.visible { display:block; }
+  .video-strip video { width:100%; border-radius:8px; max-height:180px; background:#000; }
+
+  .char-info { padding:6px 14px 10px; font-size:11px; color:var(--text3); text-align:right; display:none; }
+  .char-info.visible { display:block; }
+  .char-info.warn { color:#f7a54a; }
+
+  .actions { display:none; flex-direction:column; gap:10px; }
+  .actions.visible { display:flex; }
+  .btn { width:100%; padding:14px; border-radius:var(--radius); border:1.5px solid var(--border); font-family:inherit; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; justify-content:center; gap:8px; -webkit-tap-highlight-color:transparent; }
+  .btn-edit { background:var(--surface2); color:var(--text2); }
+  .btn-regen { background:var(--surface2); color:var(--text2); }
+  .btn-post { background:#1877f2; color:white; border-color:#1877f2; }
+  .btn-post:disabled { opacity:0.5; }
+
+  /* Upload */
+  .token-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:16px; }
+  .token-status { font-size:12px; margin-top:8px; display:none; }
+  .token-status.ok { color:var(--success); display:block; }
+  .token-status.err { color:var(--danger); display:block; }
+  .btn-save { width:100%; padding:12px; margin-top:10px; background:var(--surface2); border:1.5px solid var(--border); border-radius:var(--radius-sm); color:var(--text2); font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; }
+
+  /* Upload progress */
+  .upload-progress { display:none; margin-top:12px; }
+  .upload-progress.visible { display:block; }
+  .progress-bar-wrap { background:var(--surface2); border-radius:99px; height:6px; overflow:hidden; margin-top:6px; }
+  .progress-bar { height:100%; background:var(--accent); border-radius:99px; width:0%; transition:width 0.3s; }
+  .progress-label { font-size:12px; color:var(--text2); }
+
+  .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(80px); background:var(--surface2); border:1px solid var(--border); border-radius:24px; padding:11px 22px; font-size:13px; color:var(--text); opacity:0; transition:all 0.3s; z-index:100; white-space:nowrap; max-width:90vw; text-align:center; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  .toast.success { border-color:var(--success); color:var(--success); }
+  .toast.error { border-color:var(--danger); color:var(--danger); }
+  ::-webkit-scrollbar { width:3px; height:3px; }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-dot"></div>
+  <h1>OOH Insight Now <span>포스팅 생성기</span></h1>
+</header>
+
+<div class="steps">
+  <button class="step-btn active" data-step="0" onclick="goStep(0)"><span class="step-num">1</span>소스</button>
+  <button class="step-btn" data-step="1" onclick="goStep(1)"><span class="step-num">2</span>미리보기</button>
+  <button class="step-btn" data-step="2" onclick="goStep(2)"><span class="step-num">3</span>업로드</button>
+</div>
+
+<!-- STEP 1 -->
+<div class="panel active" id="panel-0">
+  <div class="section-label">소스 유형 선택</div>
+  <div class="source-tabs">
+    <button class="tab-btn active" data-type="link" onclick="setType('link',this)">🔗 뉴스 링크</button>
+    <button class="tab-btn" data-type="photo" onclick="setType('photo',this)">🖼 사진</button>
+    <button class="tab-btn" data-type="video" onclick="setType('video',this)">🎬 동영상</button>
+    <button class="tab-btn" data-type="doc" onclick="setType('doc',this)">📄 문서</button>
+    <button class="tab-btn" data-type="memo" onclick="setType('memo',this)">✏️ 메모</button>
+  </div>
+
+  <!-- Link -->
+  <div id="area-link">
+    <div class="section-label">뉴스 URL (최대 3개)</div>
+    <div class="url-list">
+      <div class="url-row"><div class="url-num">1</div><input type="url" class="url-input" placeholder="https://..."></div>
+      <div class="url-row"><div class="url-num">2</div><input type="url" class="url-input" placeholder="https://... (선택)"></div>
+      <div class="url-row"><div class="url-num">3</div><input type="url" class="url-input" placeholder="https://... (선택)"></div>
+    </div>
+  </div>
+
+  <!-- Photo -->
+  <div id="area-photo" style="display:none;">
+    <div class="section-label">사진 선택 (최대 5장)</div>
+    <div class="photo-grid" id="photo-grid">
+      <div class="photo-add"><input type="file" accept="image/*" multiple onchange="handlePhotos(this)"><div>＋</div><div class="photo-add-label">사진 추가</div></div>
+    </div>
+    <div class="photo-count" id="photo-count">0 / 5장 선택됨</div>
+  </div>
+
+  <!-- Video -->
+  <div id="area-video" style="display:none;">
+    <div class="section-label">동영상 선택</div>
+    <div class="video-drop" id="video-drop">
+      <input type="file" accept="video/*" id="video-input" onchange="handleVideo(this)">
+      <div class="video-drop-icon">🎬</div>
+      <div class="video-drop-text">동영상을 탭해서 선택</div>
+      <div class="video-drop-sub">MP4 · MOV · AVI 지원 · 1GB 미만</div>
+    </div>
+    <div class="video-preview" id="video-preview">
+      <video id="video-el" controls playsinline></video>
+      <div class="video-info">
+        <span class="video-name" id="video-name"></span>
+        <span class="video-size" id="video-size"></span>
+        <button class="video-remove" onclick="removeVideo()">×</button>
+      </div>
+    </div>
+    <div class="video-desc-toggle">
+      <input type="checkbox" id="video-desc-check" onchange="toggleVideoDesc()">
+      <label for="video-desc-check">영상 내용 설명 추가 (선택 — 더 정확한 포스팅 생성)</label>
+    </div>
+    <div class="video-desc-area" id="video-desc-area">
+      <textarea id="video-desc" placeholder="예: 신분당선 강남역 디지털 사이니지 설치 현장 촬영 영상" style="min-height:70px; margin-top:4px;"></textarea>
+    </div>
+  </div>
+
+  <!-- Doc -->
+  <div id="area-doc" style="display:none;">
+    <div class="section-label">파일 업로드</div>
+    <div class="photo-add" style="aspect-ratio:unset; padding:28px; border-radius:var(--radius);">
+      <input type="file" accept=".pdf,.txt,.docx" id="doc-input" onchange="handleDoc(this)">
+      <div style="font-size:28px;">📄</div>
+      <div style="font-size:13px; margin-top:6px; color:var(--text2);">파일을 탭해서 선택</div>
+      <div style="font-size:11px; margin-top:4px; color:var(--text3);">PDF · TXT · DOCX</div>
+    </div>
+    <div id="doc-name" style="display:none; margin-top:10px; padding:10px 14px; background:var(--surface2); border-radius:var(--radius-sm); font-size:13px; color:var(--text2);"></div>
+  </div>
+
+  <!-- Memo -->
+  <div id="area-memo" style="display:none;">
+    <div class="section-label">메모 / 아이디어</div>
+    <textarea id="input-memo" placeholder="포스팅으로 만들고 싶은 내용을 자유롭게 적어주세요..."></textarea>
+  </div>
+
+  <div class="context-block">
+    <div class="section-label" style="margin-top:16px;">추가 맥락 (선택)</div>
+    <textarea id="input-context" placeholder="강조할 포인트, KT 관련 맥락, 특이사항 등..." style="min-height:70px;"></textarea>
+  </div>
+
+  <button class="btn-generate" id="btn-gen" onclick="generate()">
+    <div class="spinner" id="spinner"></div>
+    <span id="gen-label">✨ 포스팅 생성</span>
+  </button>
+</div>
+
+<!-- STEP 2 -->
+<div class="panel" id="panel-1">
+  <div class="fb-card">
+    <div class="fb-header">
+      <div class="fb-avatar">OI</div>
+      <div>
+        <div class="fb-name">OOH Insight Now - 옥외광고 인사이트 나우</div>
+        <div class="fb-time">방금 전 · 🌐</div>
+      </div>
+    </div>
+    <div class="fb-body">
+      <div class="preview-empty" id="preview-empty"><div class="ei">📋</div><p>1단계에서 소스를 입력하고<br>포스팅 생성을 눌러주세요</p></div>
+      <div class="post-text" id="post-text"></div>
+      <textarea class="post-textarea" id="post-textarea" oninput="updateChar()"></textarea>
+    </div>
+    <div class="photo-strip" id="photo-strip"></div>
+    <div class="video-strip" id="video-strip"></div>
+    <div class="char-info" id="char-info"></div>
+  </div>
+  <div class="actions" id="actions">
+    <button class="btn btn-edit" id="btn-edit" onclick="toggleEdit()">✏️ 직접 수정</button>
+    <button class="btn btn-regen" onclick="generate()">🔄 재생성</button>
+    <button class="btn btn-post" onclick="goStep(2)">다음 → 페이스북 올리기</button>
+  </div>
+</div>
+
+<!-- STEP 3 -->
+<div class="panel" id="panel-2">
+  <div class="token-card">
+    <div class="section-label">Facebook 연동</div>
+    <input type="text" id="input-pageid" placeholder="페이지 ID (숫자)" style="margin-bottom:8px;">
+    <input type="text" id="input-token" placeholder="Page Access Token">
+    <button class="btn-save" onclick="saveToken()">저장</button>
+    <div class="token-status" id="token-status"></div>
+  </div>
+
+  <div class="fb-card" id="upload-preview" style="display:none;">
+    <div class="fb-header">
+      <div class="fb-avatar">OI</div>
+      <div>
+        <div class="fb-name">OOH Insight Now - 옥외광고 인사이트 나우</div>
+        <div class="fb-time">방금 전 · 🌐</div>
+      </div>
+    </div>
+    <div class="fb-body"><div class="post-text visible" id="upload-text"></div></div>
+    <div class="photo-strip" id="upload-photo-strip"></div>
+    <div class="video-strip" id="upload-video-strip"></div>
+  </div>
+
+  <div class="upload-progress" id="upload-progress">
+    <div class="progress-label" id="progress-label">업로드 중...</div>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+  </div>
+
+  <div class="actions visible" style="margin-top:12px;">
+    <button class="btn btn-post" id="btn-upload" onclick="postToFacebook()">📤 페이스북에 올리기</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let currentType = 'link';
+let photos = [];
+let videoFile = null;
+let videoObjectUrl = null;
+let docText = '';
+let savedToken = '';
+let savedPageId = '';
+let isEditing = false;
+
+window.addEventListener('load', () => {
+  const t = sessionStorage.getItem('fb_token');
+  const p = sessionStorage.getItem('fb_pageid');
+  if (t) { document.getElementById('input-token').value = t; savedToken = t; }
+  if (p) { document.getElementById('input-pageid').value = p; savedPageId = p; }
+  if (t && p) showTokenStatus(true);
+});
+
+function goStep(n) {
+  document.querySelectorAll('.panel').forEach((p,i) => p.classList.toggle('active', i===n));
+  document.querySelectorAll('.step-btn').forEach((b,i) => {
+    b.classList.remove('active','done');
+    if (i===n) b.classList.add('active');
+    else if (i<n) b.classList.add('done');
+  });
+  if (n===2) syncUploadPreview();
+}
+
+function setType(type, btn) {
+  currentType = type;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  ['link','photo','video','doc','memo'].forEach(t => {
+    document.getElementById('area-'+t).style.display = t===type ? 'block' : 'none';
+  });
+}
+
+// Photos
+function handlePhotos(input) {
+  const files = Array.from(input.files);
+  const toAdd = files.slice(0, 5 - photos.length);
+  toAdd.forEach(f => {
+    const r = new FileReader();
+    r.onload = e => { photos.push({file:f, dataUrl:e.target.result}); renderPhotos(); };
+    r.readAsDataURL(f);
+  });
+  input.value = '';
+}
+function renderPhotos() {
+  const grid = document.getElementById('photo-grid');
+  grid.innerHTML = '';
+  photos.forEach((p,i) => {
+    const div = document.createElement('div');
+    div.className = 'photo-thumb';
+    div.innerHTML = `<img src="${p.dataUrl}"><button class="photo-remove" onclick="removePhoto(${i})">×</button>`;
+    grid.appendChild(div);
+  });
+  if (photos.length < 5) {
+    const add = document.createElement('div');
+    add.className = 'photo-add';
+    add.innerHTML = `<input type="file" accept="image/*" multiple onchange="handlePhotos(this)"><div>＋</div><div class="photo-add-label">사진 추가</div>`;
+    grid.appendChild(add);
+  }
+  document.getElementById('photo-count').textContent = `${photos.length} / 5장 선택됨`;
+}
+function removePhoto(i) { photos.splice(i,1); renderPhotos(); }
+
+// Video
+function handleVideo(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 1024*1024*1024) { showToast('1GB 이하 파일만 업로드 가능합니다', 'error'); return; }
+  videoFile = file;
+  if (videoObjectUrl) URL.revokeObjectURL(videoObjectUrl);
+  videoObjectUrl = URL.createObjectURL(file);
+  document.getElementById('video-el').src = videoObjectUrl;
+  document.getElementById('video-name').textContent = file.name;
+  document.getElementById('video-size').textContent = formatSize(file.size);
+  document.getElementById('video-preview').classList.add('visible');
+  document.getElementById('video-drop').style.display = 'none';
+}
+function removeVideo() {
+  videoFile = null;
+  if (videoObjectUrl) { URL.revokeObjectURL(videoObjectUrl); videoObjectUrl = null; }
+  document.getElementById('video-el').src = '';
+  document.getElementById('video-input').value = '';
+  document.getElementById('video-preview').classList.remove('visible');
+  document.getElementById('video-drop').style.display = 'block';
+}
+function toggleVideoDesc() {
+  const checked = document.getElementById('video-desc-check').checked;
+  document.getElementById('video-desc-area').classList.toggle('visible', checked);
+}
+function formatSize(bytes) {
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1)+'KB';
+  if (bytes < 1024*1024*1024) return (bytes/1024/1024).toFixed(1)+'MB';
+  return (bytes/1024/1024/1024).toFixed(2)+'GB';
+}
+
+// Doc
+async function handleDoc(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('doc-name').textContent = '📄 '+file.name;
+  document.getElementById('doc-name').style.display = 'block';
+  docText = await new Promise(res => { const r=new FileReader(); r.onload=e=>res(e.target.result); r.readAsText(file,'UTF-8'); });
+}
+
+// Generate
+async function generate() {
+  const btn = document.getElementById('btn-gen');
+  const spinner = document.getElementById('spinner');
+  const label = document.getElementById('gen-label');
+  let sourceContent = '';
+  let imageData = null, imageMediaType = null;
+
+  if (currentType === 'link') {
+    const urls = Array.from(document.querySelectorAll('.url-input')).map(i=>i.value.trim()).filter(Boolean);
+    if (!urls.length) { showToast('URL을 1개 이상 입력해주세요','error'); return; }
+    sourceContent = urls.length===1
+      ? `뉴스 링크: ${urls[0]}\n이 URL의 기사를 분석해서 포스팅을 작성해주세요.`
+      : `다음 뉴스 링크들을 종합해서 포스팅을 작성해주세요:\n${urls.map((u,i)=>`${i+1}. ${u}`).join('\n')}`;
+  } else if (currentType === 'photo') {
+    if (!photos.length) { showToast('사진을 1장 이상 선택해주세요','error'); return; }
+    imageData = photos[0].dataUrl.split(',')[1];
+    imageMediaType = photos[0].file.type;
+    sourceContent = `첨부 사진${photos.length>1?' '+photos.length+'장':''}을 보고 옥외광고 관련 포스팅을 작성해주세요.`;
+  } else if (currentType === 'video') {
+    if (!videoFile) { showToast('동영상을 선택해주세요','error'); return; }
+    const desc = document.getElementById('video-desc-check').checked ? document.getElementById('video-desc').value.trim() : '';
+    sourceContent = desc
+      ? `동영상 내용: ${desc}\n이 영상을 소개하는 옥외광고 관련 포스팅을 작성해주세요.`
+      : `옥외광고 현장 영상을 업로드합니다. 영상을 소개하는 매력적인 포스팅을 작성해주세요.`;
+  } else if (currentType === 'doc') {
+    if (!docText) { showToast('파일을 업로드해주세요','error'); return; }
+    sourceContent = `문서 내용:\n${docText.slice(0,3000)}`;
+  } else if (currentType === 'memo') {
+    const memo = document.getElementById('input-memo').value.trim();
+    if (!memo) { showToast('메모를 입력해주세요','error'); return; }
+    sourceContent = `메모/아이디어:\n${memo}`;
+  }
+
+  const ctx = document.getElementById('input-context').value.trim();
+  if (ctx) sourceContent += `\n\n추가 맥락: ${ctx}`;
+
+  btn.disabled = true; spinner.style.display='block'; label.textContent='생성 중...';
+
+  try {
+    const system = `당신은 OOH(옥외광고) 전문가이자 SNS 콘텐츠 크리에이터입니다.
+KT 옥외광고 담당자(KT스퀘어, 신분당선, 버스쉘터, KT 바로광고 운영)의 시선으로 글을 씁니다.
+페이스북 페이지 "OOH Insight Now - 옥외광고 인사이트 나우"에 올릴 포스팅을 아래 형식으로 작성하세요.
+
+[반드시 지킬 포스팅 형식]
+1. 이모지 + 후킹 1줄: 핵심 팩트를 간결하게
+2. 빈 줄
+3. 불렛 포인트 2~4개 (- 로 시작): 주목할 포인트
+4. 빈 줄
+5. 소프트 코멘트 2~3문장: 실무자 시선의 인사이트, 부드럽고 전문적으로
+6. 빈 줄
+7. 의의 한 문장: 임팩트 있는 선언형 마무리 (질문 절대 금지)
+8. 빈 줄
+9. 해시태그 4~5개 (#DOOH #옥외광고 #OOHInsightNow 포함)
+
+언어: 한국어 (해시태그 영어 혼용 가능) / 이모지 적절히 / 톤: 전문적이지만 따뜻하게`;
+
+    const userContent = imageData
+      ? [{ type:'image', source:{ type:'base64', media_type:imageMediaType, data:imageData }}, { type:'text', text:sourceContent }]
+      : sourceContent;
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:1000, system, messages:[{ role:'user', content:userContent }] })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    showPreview(data.content.map(b=>b.text||'').join(''));
+    goStep(1);
+  } catch(e) {
+    showToast('생성 실패: '+e.message,'error');
+  } finally {
+    btn.disabled=false; spinner.style.display='none'; label.textContent='✨ 포스팅 생성';
+  }
+}
+
+function showPreview(text) {
+  document.getElementById('preview-empty').style.display='none';
+  const pt = document.getElementById('post-text');
+  const ta = document.getElementById('post-textarea');
+  pt.textContent=text; pt.classList.add('visible');
+  ta.value=text; ta.classList.remove('visible');
+  isEditing=false;
+  document.getElementById('btn-edit').textContent='✏️ 직접 수정';
+
+  // Photo strip
+  const ps = document.getElementById('photo-strip');
+  ps.innerHTML='';
+  if (currentType==='photo' && photos.length) {
+    photos.forEach(p => { const img=document.createElement('img'); img.src=p.dataUrl; ps.appendChild(img); });
+    ps.classList.add('visible');
+  } else ps.classList.remove('visible');
+
+  // Video strip
+  const vs = document.getElementById('video-strip');
+  vs.innerHTML='';
+  if (currentType==='video' && videoObjectUrl) {
+    const v=document.createElement('video'); v.src=videoObjectUrl; v.controls=true; v.setAttribute('playsinline','');
+    vs.appendChild(v); vs.classList.add('visible');
+  } else vs.classList.remove('visible');
+
+  const ci=document.getElementById('char-info');
+  ci.className='char-info visible'; updateChar();
+  document.getElementById('actions').classList.add('visible');
+}
+
+function toggleEdit() {
+  const pt=document.getElementById('post-text');
+  const ta=document.getElementById('post-textarea');
+  const btn=document.getElementById('btn-edit');
+  isEditing=!isEditing;
+  if (isEditing) { pt.classList.remove('visible'); ta.classList.add('visible'); ta.focus(); btn.textContent='👁 미리보기'; }
+  else { pt.textContent=ta.value; pt.classList.add('visible'); ta.classList.remove('visible'); btn.textContent='✏️ 직접 수정'; }
+}
+
+function updateChar() {
+  const ta=document.getElementById('post-textarea');
+  const ci=document.getElementById('char-info');
+  const len=ta.value.length;
+  ci.textContent=`${len}자`;
+  ci.className='char-info visible'+(len>2000?' warn':'');
+}
+
+function syncUploadPreview() {
+  const pt=document.getElementById('post-text');
+  const ta=document.getElementById('post-textarea');
+  const text=(isEditing?ta.value:pt.textContent).trim();
+  document.getElementById('upload-text').textContent=text;
+
+  const ups=document.getElementById('upload-photo-strip');
+  ups.innerHTML='';
+  if (currentType==='photo' && photos.length) {
+    photos.forEach(p=>{ const img=document.createElement('img'); img.src=p.dataUrl; ups.appendChild(img); });
+    ups.classList.add('visible');
+  } else ups.classList.remove('visible');
+
+  const uvs=document.getElementById('upload-video-strip');
+  uvs.innerHTML='';
+  if (currentType==='video' && videoObjectUrl) {
+    const v=document.createElement('video'); v.src=videoObjectUrl; v.controls=true; v.setAttribute('playsinline','');
+    uvs.appendChild(v); uvs.classList.add('visible');
+  } else uvs.classList.remove('visible');
+
+  document.getElementById('upload-preview').style.display=text?'block':'none';
+}
+
+function saveToken() {
+  const t=document.getElementById('input-token').value.trim();
+  const p=document.getElementById('input-pageid').value.trim();
+  if (!t||!p) { showToast('토큰과 페이지 ID를 입력해주세요','error'); return; }
+  savedToken=t; savedPageId=p;
+  sessionStorage.setItem('fb_token',t); sessionStorage.setItem('fb_pageid',p);
+  showTokenStatus(true); showToast('연동 정보 저장됨','success');
+}
+
+function showTokenStatus(ok) {
+  const el=document.getElementById('token-status');
+  el.className='token-status '+(ok?'ok':'err');
+  el.textContent=ok?'✓ 연동 준비 완료':'✗ 토큰 오류';
+}
+
+function setProgress(pct, label) {
+  document.getElementById('progress-bar').style.width=pct+'%';
+  document.getElementById('progress-label').textContent=label;
+}
+
+async function postToFacebook() {
+  if (!savedToken||!savedPageId) { showToast('토큰과 페이지 ID를 먼저 저장해주세요','error'); return; }
+  const pt=document.getElementById('post-text');
+  const ta=document.getElementById('post-textarea');
+  const message=(isEditing?ta.value:pt.textContent).trim();
+  if (!message) { showToast('포스팅 내용이 없습니다','error'); return; }
+
+  const btn=document.getElementById('btn-upload');
+  const prog=document.getElementById('upload-progress');
+  btn.disabled=true; btn.textContent='업로드 중...';
+  prog.classList.add('visible'); setProgress(10,'준비 중...');
+
+  try {
+    if (currentType==='video' && videoFile) {
+      setProgress(30,'영상 업로드 중...');
+      const fd=new FormData();
+      fd.append('source', videoFile);
+      fd.append('description', message);
+      fd.append('access_token', savedToken);
+      const r=await fetch(`https://graph.facebook.com/v21.0/${savedPageId}/videos`, { method:'POST', body:fd });
+      const d=await r.json();
+      if (d.error) throw new Error(d.error.message);
+      setProgress(100,'완료!');
+    } else if (currentType==='photo' && photos.length) {
+      setProgress(20,'사진 업로드 중...');
+      if (photos.length===1) {
+        const fd=new FormData();
+        fd.append('message',message); fd.append('source',photos[0].file); fd.append('access_token',savedToken);
+        const r=await fetch(`https://graph.facebook.com/v21.0/${savedPageId}/photos`,{method:'POST',body:fd});
+        const d=await r.json(); if(d.error) throw new Error(d.error.message);
+      } else {
+        const mediaIds=[];
+        for (let i=0;i<photos.length;i++) {
+          setProgress(20+Math.round(60*i/photos.length), `사진 업로드 중... (${i+1}/${photos.length})`);
+          const fd=new FormData();
+          fd.append('source',photos[i].file); fd.append('published','false'); fd.append('access_token',savedToken);
+          const r=await fetch(`https://graph.facebook.com/v21.0/${savedPageId}/photos`,{method:'POST',body:fd});
+          const d=await r.json(); if(d.error) throw new Error(d.error.message);
+          mediaIds.push(d.id);
+        }
+        setProgress(85,'포스팅 생성 중...');
+        const r=await fetch(`https://graph.facebook.com/v21.0/${savedPageId}/feed`,{
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({ message, attached_media:mediaIds.map(id=>({media_fbid:id})), access_token:savedToken })
+        });
+        const d=await r.json(); if(d.error) throw new Error(d.error.message);
+      }
+      setProgress(100,'완료!');
+    } else {
+      setProgress(50,'포스팅 중...');
+      const r=await fetch(`https://graph.facebook.com/v21.0/${savedPageId}/feed`,{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ message, access_token:savedToken })
+      });
+      const d=await r.json(); if(d.error) throw new Error(d.error.message);
+      setProgress(100,'완료!');
+    }
+    showToast('✅ 페이스북 포스팅 완료!','success');
+    btn.textContent='✅ 업로드 완료';
+  } catch(e) {
+    showToast('실패: '+e.message,'error');
+    prog.classList.remove('visible');
+    btn.disabled=false; btn.textContent='📤 페이스북에 올리기';
+  }
+}
+
+function showToast(msg, type='') {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show '+type;
+  setTimeout(()=>t.className='toast',3000);
+}
+</script>
+</body>
+</html>
