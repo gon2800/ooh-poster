@@ -237,6 +237,13 @@
     <textarea id="input-context" placeholder="강조할 포인트, KT 관련 맥락, 특이사항 등..." style="min-height:70px;"></textarea>
   </div>
 
+  <div class="token-card" style="margin-top:16px; margin-bottom:0;">
+    <div class="section-label">프록시 키</div>
+    <input type="password" id="input-proxykey" placeholder="프록시 키 (이 기기에 저장됨)" autocomplete="off">
+    <button class="btn-save" onclick="saveProxyKey()">저장</button>
+    <div class="token-status" id="proxykey-status"></div>
+  </div>
+
   <button class="btn-generate" id="btn-gen" onclick="generate()">
     <div class="spinner" id="spinner"></div>
     <span id="gen-label">✨ 포스팅 생성</span>
@@ -312,6 +319,7 @@ let videoObjectUrl = null;
 let docText = '';
 let savedToken = '';
 let savedPageId = '';
+let proxyKey = '';
 let isEditing = false;
 
 window.addEventListener('load', () => {
@@ -320,6 +328,8 @@ window.addEventListener('load', () => {
   if (t) { document.getElementById('input-token').value = t; savedToken = t; }
   if (p) { document.getElementById('input-pageid').value = p; savedPageId = p; }
   if (t && p) showTokenStatus(true);
+  const k = localStorage.getItem('ooh_proxy_key');
+  if (k) { document.getElementById('input-proxykey').value = k; proxyKey = k; showProxyKeyStatus(true); }
 });
 
 function goStep(n) {
@@ -414,6 +424,7 @@ async function handleDoc(input) {
 
 // Generate
 async function generate() {
+  if (!proxyKey) { showToast('프록시 키를 먼저 저장해주세요','error'); showProxyKeyStatus(false); return; }
   const btn = document.getElementById('btn-gen');
   const spinner = document.getElementById('spinner');
   const label = document.getElementById('gen-label');
@@ -475,10 +486,11 @@ KT 옥외광고 담당자(KT스퀘어, 신분당선, 버스쉘터, KT 바로광�
 
     const res = await fetch('https://ooh-proxy.gon2800.workers.dev/api/generate', {
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','X-Proxy-Key':proxyKey},
       body:JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:1000, system, messages:[{ role:'user', content:userContent }] })
     });
     const data = await res.json();
+    if (res.status === 401) showProxyKeyStatus(false);
     if (data.error) throw new Error(data.error.message);
     showPreview(data.content.map(b=>b.text||'').join(''));
     goStep(1);
@@ -566,6 +578,20 @@ function saveToken() {
   savedToken=t; savedPageId=p;
   sessionStorage.setItem('fb_token',t); sessionStorage.setItem('fb_pageid',p);
   showTokenStatus(true); showToast('연동 정보 저장됨','success');
+}
+
+function saveProxyKey() {
+  const k=document.getElementById('input-proxykey').value.trim();
+  if (!k) { showToast('프록시 키를 입력해주세요','error'); return; }
+  proxyKey=k;
+  localStorage.setItem('ooh_proxy_key',k);
+  showProxyKeyStatus(true); showToast('프록시 키 저장됨','success');
+}
+
+function showProxyKeyStatus(ok) {
+  const el=document.getElementById('proxykey-status');
+  el.className='token-status '+(ok?'ok':'err');
+  el.textContent=ok?'✓ 프록시 키 저장됨':'✗ 프록시 키 오류 — 다시 입력해주세요';
 }
 
 function showTokenStatus(ok) {
