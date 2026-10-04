@@ -430,13 +430,11 @@ async function generate() {
   const label = document.getElementById('gen-label');
   let sourceContent = '';
   let imageData = null, imageMediaType = null;
+  let urls = [];
 
   if (currentType === 'link') {
-    const urls = Array.from(document.querySelectorAll('.url-input')).map(i=>i.value.trim()).filter(Boolean);
+    urls = Array.from(document.querySelectorAll('.url-input')).map(i=>i.value.trim()).filter(Boolean);
     if (!urls.length) { showToast('URL을 1개 이상 입력해주세요','error'); return; }
-    sourceContent = urls.length===1
-      ? `뉴스 링크: ${urls[0]}\n이 URL의 기사를 분석해서 포스팅을 작성해주세요.`
-      : `다음 뉴스 링크들을 종합해서 포스팅을 작성해주세요:\n${urls.map((u,i)=>`${i+1}. ${u}`).join('\n')}`;
   } else if (currentType === 'photo') {
     if (!photos.length) { showToast('사진을 1장 이상 선택해주세요','error'); return; }
     imageData = photos[0].dataUrl.split(',')[1];
@@ -458,11 +456,23 @@ async function generate() {
   }
 
   const ctx = document.getElementById('input-context').value.trim();
-  if (ctx) sourceContent += `\n\n추가 맥락: ${ctx}`;
 
   btn.disabled = true; spinner.style.display='block'; label.textContent='생성 중...';
 
   try {
+    if (currentType === 'link') {
+      label.textContent='기사 가져오는 중...';
+      const articles = await Promise.all(urls.map(fetchArticle));
+      const ok = articles.filter(a => a.content);
+      const failed = articles.filter(a => !a.content);
+      if (!ok.length) throw new Error('기사 본문을 가져오지 못했습니다 ('+failed.map(a=>`기사 ${a.n}: ${a.error}`).join(', ')+')');
+      if (failed.length) showToast(failed.map(a=>`기사 ${a.n} 가져오기 실패: ${a.error}`).join(' / ')+' — 나머지로 생성합니다','error');
+      sourceContent = (ok.length===1 ? '다음 뉴스 기사를 분석해서 포스팅을 작성해주세요.' : '다음 뉴스 기사들을 종합해서 포스팅을 작성해주세요.')
+        + ok.map(a=>`\n\n[기사 ${a.n}] ${a.url}\n${a.content}`).join('');
+      label.textContent='생성 중...';
+    }
+    if (ctx) sourceContent += `\n\n추가 맥락: ${ctx}`;
+
     const system = `당신은 OOH(옥외광고) 전문가이자 SNS 콘텐츠 크리에이터입니다.
 KT 옥외광고 담당자(KT스퀘어, 신분당선, 버스쉘터, KT 바로광고 운영)의 시선으로 글을 씁니다.
 페이스북 페이지 "OOH Insight Now - 옥외광고 인사이트 나우"에 올릴 포스팅을 아래 형식으로 작성하세요.
@@ -499,6 +509,25 @@ KT 옥외광고 담당자(KT스퀘어, 신분당선, 버스쉘터, KT 바로광�
   } finally {
     btn.disabled=false; spinner.style.display='none'; label.textContent='✨ 포스팅 생성';
   }
+}
+
+// 기사 본문 가져오기 (실패 시 content 빈 문자열 + error)
+const ARTICLE_MAX_CHARS = 8000;
+async function fetchArticle(url, i) {
+  const n = i + 1;
+  const res = await fetch('https://ooh-proxy.gon2800.workers.dev/api/fetch-url', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-Proxy-Key':proxyKey},
+    body:JSON.stringify({ url })
+  });
+  const data = await res.json().catch(() => ({}));
+  const errMsg = typeof data.error === 'string' ? data.error : data.error?.message;
+  // 키 오류·호출 상한은 기사별 실패가 아니라 전체 중단
+  if (res.status === 401) { showProxyKeyStatus(false); throw new Error(errMsg || '프록시 키 오류'); }
+  if (res.status === 429) throw new Error(errMsg || '호출 상한 초과');
+  if (!res.ok || errMsg) return { n, url, content:'', error: errMsg || `HTTP ${res.status}` };
+  const content = (data.content || '').trim().slice(0, ARTICLE_MAX_CHARS);
+  return { n, url, content, error: content ? '' : '본문이 비어 있음' };
 }
 
 function showPreview(text) {
