@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>OOH Insight Now — 포스팅 생성기</title>
+<title>揭示 · My-Post</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -149,7 +149,7 @@
 
 <header>
   <div class="logo-dot"></div>
-  <h1>OOH Insight Now <span>포스팅 생성기</span></h1>
+  <h1>揭示 · My-Post</h1>
 </header>
 
 <div class="steps">
@@ -195,7 +195,7 @@
       <input type="file" accept="video/*" id="video-input" onchange="handleVideo(this)">
       <div class="video-drop-icon">🎬</div>
       <div class="video-drop-text">동영상을 탭해서 선택</div>
-      <div class="video-drop-sub">MP4 · MOV · AVI 지원 · 1GB 미만</div>
+      <div class="video-drop-sub">MP4 · MOV · AVI 지원 · 100MB 이하</div>
     </div>
     <div class="video-preview" id="video-preview">
       <video id="video-el" controls playsinline></video>
@@ -278,14 +278,6 @@
 
 <!-- STEP 3 -->
 <div class="panel" id="panel-2">
-  <div class="token-card">
-    <div class="section-label">Facebook 연동</div>
-    <input type="text" id="input-pageid" placeholder="페이지 ID (숫자)" style="margin-bottom:8px;">
-    <input type="text" id="input-token" placeholder="Page Access Token">
-    <button class="btn-save" onclick="saveToken()">저장</button>
-    <div class="token-status" id="token-status"></div>
-  </div>
-
   <div class="fb-card" id="upload-preview" style="display:none;">
     <div class="fb-header">
       <div class="fb-avatar">OI</div>
@@ -317,17 +309,18 @@ let photos = [];
 let videoFile = null;
 let videoObjectUrl = null;
 let docText = '';
-let savedToken = '';
-let savedPageId = '';
 let proxyKey = '';
+const PROXY_URL = 'https://ooh-proxy.gon2800.workers.dev';
+const VIDEO_MAX_BYTES = 100*1024*1024;   // Worker 요청 본문 상한
 let isEditing = false;
 
 window.addEventListener('load', () => {
-  const t = sessionStorage.getItem('fb_token');
-  const p = sessionStorage.getItem('fb_pageid');
-  if (t) { document.getElementById('input-token').value = t; savedToken = t; }
-  if (p) { document.getElementById('input-pageid').value = p; savedPageId = p; }
-  if (t && p) showTokenStatus(true);
+  // 주소 #key=... 로 열면 키를 이 기기에 저장하고 주소에서 지움 (전화기용)
+  const hashKey = new URLSearchParams(location.hash.slice(1)).get('key');
+  if (hashKey) {
+    localStorage.setItem('ooh_proxy_key', hashKey.trim());
+    history.replaceState(null, '', location.pathname + location.search);
+  }
   const k = localStorage.getItem('ooh_proxy_key');
   if (k) { document.getElementById('input-proxykey').value = k; proxyKey = k; showProxyKeyStatus(true); }
 });
@@ -385,7 +378,7 @@ function removePhoto(i) { photos.splice(i,1); renderPhotos(); }
 function handleVideo(input) {
   const file = input.files[0];
   if (!file) return;
-  if (file.size > 1024*1024*1024) { showToast('1GB 이하 파일만 업로드 가능합니다', 'error'); return; }
+  if (file.size > VIDEO_MAX_BYTES) { showToast(`동영상은 100MB 이하만 올릴 수 있습니다 (선택한 파일 ${formatSize(file.size)})`, 'error'); input.value=''; return; }
   videoFile = file;
   if (videoObjectUrl) URL.revokeObjectURL(videoObjectUrl);
   videoObjectUrl = URL.createObjectURL(file);
@@ -494,7 +487,7 @@ KT 옥외광고 담당자(KT스퀘어, 신분당선, 버스쉘터, KT 바로광�
       ? [{ type:'image', source:{ type:'base64', media_type:imageMediaType, data:imageData }}, { type:'text', text:sourceContent }]
       : sourceContent;
 
-    const res = await fetch('https://ooh-proxy.gon2800.workers.dev/api/generate', {
+    const res = await fetch(PROXY_URL+'/api/generate', {
       method:'POST',
       headers:{'Content-Type':'application/json','X-Proxy-Key':proxyKey},
       body:JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:1000, system, messages:[{ role:'user', content:userContent }] })
@@ -515,7 +508,7 @@ KT 옥외광고 담당자(KT스퀘어, 신분당선, 버스쉘터, KT 바로광�
 const ARTICLE_MAX_CHARS = 8000;
 async function fetchArticle(url, i) {
   const n = i + 1;
-  const res = await fetch('https://ooh-proxy.gon2800.workers.dev/api/fetch-url', {
+  const res = await fetch(PROXY_URL+'/api/fetch-url', {
     method:'POST',
     headers:{'Content-Type':'application/json','X-Proxy-Key':proxyKey},
     body:JSON.stringify({ url })
@@ -600,15 +593,6 @@ function syncUploadPreview() {
   document.getElementById('upload-preview').style.display=text?'block':'none';
 }
 
-function saveToken() {
-  const t=document.getElementById('input-token').value.trim();
-  const p=document.getElementById('input-pageid').value.trim();
-  if (!t||!p) { showToast('토큰과 페이지 ID를 입력해주세요','error'); return; }
-  savedToken=t; savedPageId=p;
-  sessionStorage.setItem('fb_token',t); sessionStorage.setItem('fb_pageid',p);
-  showTokenStatus(true); showToast('연동 정보 저장됨','success');
-}
-
 function saveProxyKey() {
   const k=document.getElementById('input-proxykey').value.trim();
   if (!k) { showToast('프록시 키를 입력해주세요','error'); return; }
@@ -623,23 +607,39 @@ function showProxyKeyStatus(ok) {
   el.textContent=ok?'✓ 프록시 키 저장됨':'✗ 프록시 키 오류 — 다시 입력해주세요';
 }
 
-function showTokenStatus(ok) {
-  const el=document.getElementById('token-status');
-  el.className='token-status '+(ok?'ok':'err');
-  el.textContent=ok?'✓ 연동 준비 완료':'✗ 토큰 오류';
-}
-
 function setProgress(pct, label) {
   document.getElementById('progress-bar').style.width=pct+'%';
   document.getElementById('progress-label').textContent=label;
 }
 
+// 프록시 /api/fb-post 호출 (페이지 토큰은 Worker에만 있음)
+async function fbPost(body, headers={}) {
+  const res=await fetch(PROXY_URL+'/api/fb-post', {
+    method:'POST', headers:{'X-Proxy-Key':proxyKey, ...headers}, body
+  });
+  const data=await res.json().catch(()=>({}));
+  if (res.status===401) showProxyKeyStatus(false);
+  if (res.status===413) throw new Error('파일이 너무 큽니다 (동영상은 100MB 이하)');
+  if (!res.ok || data.error) throw new Error((typeof data.error==='string'?data.error:data.error?.message) || `HTTP ${res.status}`);
+  return data;
+}
+
+// UTF-8 문자열 → base64 (헤더로 보낼 동영상 설명)
+function utf8ToBase64(str) {
+  const bytes=new TextEncoder().encode(str);
+  let bin=''; for (let i=0;i<bytes.length;i+=0x8000) bin+=String.fromCharCode(...bytes.subarray(i,i+0x8000));
+  return btoa(bin);
+}
+
 async function postToFacebook() {
-  if (!savedToken||!savedPageId) { showToast('토큰과 페이지 ID를 먼저 저장해주세요','error'); return; }
+  if (!proxyKey) { showToast('프록시 키를 먼저 저장해주세요','error'); showProxyKeyStatus(false); return; }
   const pt=document.getElementById('post-text');
   const ta=document.getElementById('post-textarea');
   const message=(isEditing?ta.value:pt.textContent).trim();
   if (!message) { showToast('포스팅 내용이 없습니다','error'); return; }
+  if (currentType==='video' && videoFile && videoFile.size>VIDEO_MAX_BYTES) {
+    showToast(`동영상은 100MB 이하만 올릴 수 있습니다 (현재 ${formatSize(videoFile.size)})`,'error'); return;
+  }
 
   const btn=document.getElementById('btn-upload');
   const prog=document.getElementById('upload-progress');
@@ -649,48 +649,22 @@ async function postToFacebook() {
   try {
     if (currentType==='video' && videoFile) {
       setProgress(30,'영상 업로드 중...');
-      const fd=new FormData();
-      fd.append('source', videoFile);
-      fd.append('description', message);
-      fd.append('access_token', savedToken);
-      const r=await fetch(`https://graph.facebook.com/v21.0/${savedPageId}/videos`, { method:'POST', body:fd });
-      const d=await r.json();
-      if (d.error) throw new Error(d.error.message);
-      setProgress(100,'완료!');
-    } else if (currentType==='photo' && photos.length) {
-      setProgress(20,'사진 업로드 중...');
-      if (photos.length===1) {
-        const fd=new FormData();
-        fd.append('message',message); fd.append('source',photos[0].file); fd.append('access_token',savedToken);
-        const r=await fetch(`https://graph.facebook.com/v21.0/${savedPageId}/photos`,{method:'POST',body:fd});
-        const d=await r.json(); if(d.error) throw new Error(d.error.message);
-      } else {
-        const mediaIds=[];
-        for (let i=0;i<photos.length;i++) {
-          setProgress(20+Math.round(60*i/photos.length), `사진 업로드 중... (${i+1}/${photos.length})`);
-          const fd=new FormData();
-          fd.append('source',photos[i].file); fd.append('published','false'); fd.append('access_token',savedToken);
-          const r=await fetch(`https://graph.facebook.com/v21.0/${savedPageId}/photos`,{method:'POST',body:fd});
-          const d=await r.json(); if(d.error) throw new Error(d.error.message);
-          mediaIds.push(d.id);
-        }
-        setProgress(85,'포스팅 생성 중...');
-        const r=await fetch(`https://graph.facebook.com/v21.0/${savedPageId}/feed`,{
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({ message, attached_media:mediaIds.map(id=>({media_fbid:id})), access_token:savedToken })
-        });
-        const d=await r.json(); if(d.error) throw new Error(d.error.message);
-      }
-      setProgress(100,'완료!');
+      await fbPost(videoFile, { 'Content-Type': videoFile.type||'video/mp4', 'X-FB-Message': utf8ToBase64(message) });
     } else {
-      setProgress(50,'포스팅 중...');
-      const r=await fetch(`https://graph.facebook.com/v21.0/${savedPageId}/feed`,{
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({ message, access_token:savedToken })
-      });
-      const d=await r.json(); if(d.error) throw new Error(d.error.message);
-      setProgress(100,'완료!');
+      const fd=new FormData();
+      fd.append('message', message);
+      if (currentType==='photo' && photos.length) {
+        setProgress(30, `사진 ${photos.length}장 업로드 중...`);
+        photos.forEach(p=>fd.append('photos', p.file));
+      } else {
+        // 링크 모드: 첫 번째 원문 URL을 게시물 링크로 (링크 카드)
+        const link=currentType==='link' ? Array.from(document.querySelectorAll('.url-input')).map(i=>i.value.trim()).find(Boolean) : '';
+        if (link) fd.append('link', link);
+        setProgress(50,'포스팅 중...');
+      }
+      await fbPost(fd);
     }
+    setProgress(100,'완료!');
     showToast('✅ 페이스북 포스팅 완료!','success');
     btn.textContent='✅ 업로드 완료';
   } catch(e) {
