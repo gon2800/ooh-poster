@@ -1,6 +1,6 @@
 {
-  "name": "投稿 · My-Post",
-  "short_name": "My-Post",
+  "name": "My Post",
+  "short_name": "My Post",
   "description": "OOH Insight Now 페이스북 포스팅 생성·업로드",
   "start_url": "ooh-poster.html",
   "scope": "./",
