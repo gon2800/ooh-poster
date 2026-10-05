@@ -2,153 +2,190 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#F5F6FB">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="My-Post">
 <title>投稿 · My-Post</title>
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   :root {
-    --bg: #0a0d1a; --surface: #111527; --surface2: #1a1f38;
-    --border: #2a2f52; --accent: #4a6cf7; --accent2: #00c6ae;
-    --text: #e8eaf6; --text2: #8890b8; --text3: #555e8a;
-    --danger: #f7564a; --success: #00c6ae;
-    --radius: 14px; --radius-sm: 10px;
+    --bg: #F5F6FB; --card: #FFFFFF;
+    --ink: #1F2437; --sub: #7A809A;
+    --line: #EBEDF4; --line-strong: #D3D8E6;
+    --accent: #5B54E8; --accent-dark: #4C46D6; --accent-soft: #EEEDFD;
+    --danger: #EF6C6C; --danger-soft: #FDECEC;
+    --ok: #3FB950;
+    --shadow: 0 1px 2px rgba(31,36,55,.04), 0 8px 24px rgba(31,36,55,.06);
+    --radius: 18px;
   }
-  body { font-family: 'Apple SD Gothic Neo','Noto Sans KR',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding-bottom:40px; }
+  html, body { overscroll-behavior-y: none; }
+  body { font-family: -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif; font-size:16px; word-break:keep-all; overflow-wrap:anywhere; background:var(--bg); color:var(--ink); min-height:100vh; }
+  button { font-family:inherit; }
 
-  header { padding:16px 20px; border-bottom:1px solid var(--border); background:var(--surface); display:flex; align-items:center; gap:10px; position:sticky; top:0; z-index:10; }
-  .logo-dot { width:9px; height:9px; background:var(--accent); border-radius:50%; box-shadow:0 0 8px var(--accent); flex-shrink:0; }
-  header h1 { font-size:14px; font-weight:600; }
-  header span { font-size:12px; color:var(--text3); margin-left:2px; }
+  /* App shell */
+  #app { max-width:520px; margin:0 auto; padding-bottom:calc(40px + env(safe-area-inset-bottom)); }
+  .app-header { background:transparent; padding:max(env(safe-area-inset-top), 14px) 16px 10px; display:flex; align-items:center; gap:10px; }
+  .header-icon { width:42px; height:42px; border-radius:13px; overflow:hidden; flex-shrink:0; }
+  .header-icon img { width:100%; height:100%; object-fit:cover; display:block; }
+  .app-header h1 { font-size:20px; font-weight:700; color:var(--ink); letter-spacing:-0.3px; }
 
-  .steps { display:flex; padding:0 20px; margin:20px 0 0; }
-  .step-btn { flex:1; padding:10px 4px; background:none; border:none; border-bottom:2px solid var(--border); color:var(--text3); font-family:inherit; font-size:12px; font-weight:500; cursor:pointer; transition:all 0.2s; text-align:center; }
-  .step-btn.active { border-bottom-color:var(--accent); color:var(--accent); }
-  .step-num { display:inline-flex; width:18px; height:18px; border-radius:50%; background:var(--surface2); align-items:center; justify-content:center; font-size:10px; margin-right:4px; transition:background 0.2s; }
-  .step-btn.active .step-num { background:var(--accent); color:white; }
-  .step-btn.done .step-num { background:var(--accent2); color:#0a0d1a; }
-  .step-btn.done { color:var(--accent2); border-bottom-color:var(--accent2); }
+  /* Steps = 견출지 탭바 */
+  .steps { display:flex; padding:0 10px; background:transparent; }
+  .step-btn { position:relative; flex:1; min-width:54px; padding:11px 2px 10px; background:transparent; border:none; border-radius:8px 8px 0 0; color:var(--sub); font-size:14px; font-weight:700; cursor:pointer; text-align:center; white-space:nowrap; user-select:none; }
+  .step-btn.active { background:var(--card); color:var(--accent); font-weight:800; border-bottom:1px solid var(--card); margin-bottom:-1px; }
+  .step-btn.active::before, .step-btn.active::after { content:""; position:absolute; bottom:0; width:8px; height:8px; pointer-events:none; }
+  .step-btn.active::before { left:-8px; background:radial-gradient(circle at top left, transparent 8px, var(--card) 8px); }
+  .step-btn.active::after { right:-8px; background:radial-gradient(circle at top right, transparent 8px, var(--card) 8px); }
+  .step-btn:first-child.active::before, .step-btn:last-child.active::after { content:none; }
+  .step-btn:first-child.active { border-top-left-radius:var(--radius); }
+  .step-btn:last-child.active { border-top-right-radius:var(--radius); }
+  .step-num { display:inline-flex; width:20px; height:20px; border-radius:50%; background:var(--line); color:var(--sub); align-items:center; justify-content:center; font-size:11px; font-weight:800; margin-right:5px; vertical-align:1px; font-variant-numeric:tabular-nums; }
+  .step-btn.active .step-num { background:var(--accent); color:#fff; }
+  .step-btn.done .step-num { background:var(--accent-soft); color:var(--accent); }
 
-  .panel { display:none; padding:20px; }
+  /* Panels = 카드 */
+  .tab-content { padding:0 10px; }
+  .panel { display:none; background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; }
   .panel.active { display:block; }
+  .panel.corner-first { border-radius:0 var(--radius) var(--radius) var(--radius); }
+  .panel.corner-last { border-radius:var(--radius) 0 var(--radius) var(--radius); }
 
-  .section-label { font-size:11px; font-weight:600; color:var(--text3); letter-spacing:1px; text-transform:uppercase; margin-bottom:10px; }
+  .section-label { font-size:12px; font-weight:700; color:var(--sub); margin-bottom:8px; }
 
-  .source-tabs { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:20px; }
-  .tab-btn { padding:12px 8px; border-radius:var(--radius-sm); border:1.5px solid var(--border); background:var(--surface); color:var(--text2); font-size:13px; font-family:inherit; cursor:pointer; transition:all 0.15s; text-align:center; }
-  .tab-btn.active { background:rgba(74,108,247,0.12); border-color:var(--accent); color:var(--text); font-weight:600; }
+  /* 소스 유형 세그먼트 */
+  .source-tabs { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px; }
+  .tab-btn { flex:1 1 calc(33.333% - 6px); height:42px; padding:0 6px; border-radius:9px; border:2px solid var(--line); background:var(--card); color:var(--sub); font-size:13px; font-weight:700; cursor:pointer; transition:all 0.15s; text-align:center; white-space:nowrap; }
+  .tab-btn.active { background:var(--accent-soft); border-color:var(--accent); color:var(--accent); }
 
-  .url-list { display:flex; flex-direction:column; gap:10px; }
+  .url-list { display:flex; flex-direction:column; gap:8px; }
   .url-row { display:flex; gap:8px; align-items:center; }
-  .url-num { width:22px; height:22px; border-radius:50%; background:var(--surface2); border:1px solid var(--border); color:var(--text3); font-size:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .url-num { width:24px; height:24px; border-radius:50%; background:var(--accent-soft); color:var(--accent); font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-variant-numeric:tabular-nums; }
 
-  input[type="url"], input[type="text"], textarea { width:100%; background:var(--surface2); border:1.5px solid var(--border); border-radius:var(--radius-sm); padding:13px 14px; color:var(--text); font-family:inherit; font-size:14px; outline:none; transition:border-color 0.15s; -webkit-appearance:none; }
-  input:focus, textarea:focus { border-color:var(--accent); }
-  input::placeholder, textarea::placeholder { color:var(--text3); }
+  input[type="url"], input[type="text"], input[type="password"], textarea { width:100%; background:var(--bg); border:1.5px solid var(--line); border-radius:10px; padding:11px 12px; color:var(--ink); font-family:inherit; font-size:15px; font-weight:500; outline:none; transition:border-color 0.15s, background 0.15s; -webkit-appearance:none; }
+  input[type="url"], input[type="text"], input[type="password"] { height:44px; padding:0 12px; }
+  input:focus, textarea:focus { border-color:var(--accent); background:var(--card); }
+  input::placeholder, textarea::placeholder { color:var(--sub); opacity:.7; font-weight:400; }
   textarea { resize:none; line-height:1.6; min-height:90px; }
 
   /* Photo grid */
   .photo-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:8px; }
-  .photo-thumb { aspect-ratio:1; border-radius:var(--radius-sm); overflow:hidden; position:relative; background:var(--surface2); border:1.5px solid var(--border); }
+  .photo-thumb { aspect-ratio:1; border-radius:12px; overflow:hidden; position:relative; background:var(--bg); border:1px solid var(--line); }
   .photo-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
-  .photo-remove { position:absolute; top:4px; right:4px; width:22px; height:22px; border-radius:50%; background:rgba(0,0,0,0.7); border:none; color:white; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
-  .photo-add { aspect-ratio:1; border-radius:var(--radius-sm); border:1.5px dashed var(--border); background:var(--surface); display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; color:var(--text3); font-size:24px; transition:all 0.15s; position:relative; }
+  .photo-remove { position:absolute; top:5px; right:5px; width:24px; height:24px; border-radius:50%; background:rgba(31,36,55,0.6); border:none; color:#fff; font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .photo-add { aspect-ratio:1; border-radius:12px; border:2px dashed var(--line-strong); background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; color:var(--accent); font-size:24px; font-weight:700; transition:all 0.15s; position:relative; }
+  .photo-add:hover { border-color:var(--accent); background:var(--accent-soft); }
   .photo-add input { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
-  .photo-add-label { font-size:10px; margin-top:4px; color:var(--text3); }
-  .photo-count { font-size:11px; color:var(--text3); text-align:right; }
+  .photo-add-label { font-size:12px; font-weight:700; margin-top:4px; color:var(--sub); }
+  .photo-count { font-size:12px; color:var(--sub); text-align:right; font-variant-numeric:tabular-nums; }
 
   /* Video */
-  .video-drop { border:1.5px dashed var(--border); border-radius:var(--radius); padding:32px 20px; text-align:center; cursor:pointer; transition:all 0.15s; position:relative; background:var(--surface); }
-  .video-drop:hover { border-color:var(--accent); background:rgba(74,108,247,0.05); }
+  .video-drop { border:2px dashed var(--line-strong); border-radius:14px; padding:30px 20px; text-align:center; cursor:pointer; transition:all 0.15s; position:relative; background:var(--bg); }
+  .video-drop:hover { border-color:var(--accent); background:var(--accent-soft); }
   .video-drop input { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
   .video-drop-icon { font-size:32px; margin-bottom:8px; }
-  .video-drop-text { font-size:13px; color:var(--text2); }
-  .video-drop-sub { font-size:11px; color:var(--text3); margin-top:4px; }
+  .video-drop-text { font-size:14px; font-weight:700; color:var(--ink); }
+  .video-drop-sub { font-size:12px; color:var(--sub); margin-top:4px; }
 
-  .video-preview { display:none; margin-top:12px; border-radius:var(--radius); overflow:hidden; background:var(--surface2); border:1px solid var(--border); }
+  .video-preview { display:none; margin-top:12px; border-radius:14px; overflow:hidden; background:var(--bg); border:1px solid var(--line); }
   .video-preview.visible { display:block; }
   .video-preview video { width:100%; max-height:240px; display:block; background:#000; }
   .video-info { padding:10px 14px; display:flex; align-items:center; justify-content:space-between; }
-  .video-name { font-size:12px; color:var(--text2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
-  .video-size { font-size:11px; color:var(--text3); margin-left:8px; flex-shrink:0; }
-  .video-remove { background:none; border:none; color:var(--text3); cursor:pointer; font-size:18px; padding:0 4px; margin-left:8px; }
+  .video-name { font-size:13px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
+  .video-size { font-size:12px; color:var(--sub); margin-left:8px; flex-shrink:0; font-variant-numeric:tabular-nums; }
+  .video-remove { background:none; border:none; color:var(--sub); cursor:pointer; font-size:20px; padding:0 4px; margin-left:8px; }
   .video-remove:hover { color:var(--danger); }
 
   /* Video description (optional) */
   .video-desc-toggle { display:flex; align-items:center; gap:8px; margin-top:12px; cursor:pointer; }
-  .video-desc-toggle input[type="checkbox"] { width:16px; height:16px; accent-color:var(--accent); cursor:pointer; }
-  .video-desc-toggle label { font-size:12px; color:var(--text2); cursor:pointer; }
+  .video-desc-toggle input[type="checkbox"] { width:18px; height:18px; accent-color:var(--accent); cursor:pointer; flex-shrink:0; }
+  .video-desc-toggle label { font-size:13px; color:var(--sub); cursor:pointer; }
   .video-desc-area { display:none; margin-top:8px; }
   .video-desc-area.visible { display:block; }
 
-  .context-block { margin-top:16px; }
+  .doc-drop { aspect-ratio:unset; padding:28px; border-radius:14px; }
+  .doc-drop .dd-text { font-size:14px; font-weight:700; margin-top:6px; color:var(--ink); }
+  .doc-drop .dd-sub { font-size:12px; font-weight:400; margin-top:4px; color:var(--sub); }
+  #doc-name { margin-top:10px; padding:10px 14px; background:var(--accent-soft); border-radius:10px; font-size:13px; font-weight:700; color:var(--accent); }
 
-  .btn-generate { width:100%; padding:16px; background:var(--accent); color:white; border:none; border-radius:var(--radius); font-size:15px; font-weight:700; font-family:inherit; cursor:pointer; margin-top:20px; display:flex; align-items:center; justify-content:center; gap:8px; transition:background 0.15s; -webkit-tap-highlight-color:transparent; }
-  .btn-generate:active { background:#3a5ce6; }
-  .btn-generate:disabled { opacity:0.5; }
-  .spinner { width:18px; height:18px; border:2px solid rgba(255,255,255,0.3); border-top-color:white; border-radius:50%; animation:spin 0.7s linear infinite; display:none; }
+  .context-block { margin-top:18px; }
+
+  .btn-generate { width:100%; height:50px; background:var(--accent); color:#fff; border:none; border-radius:14px; font-size:16px; font-weight:700; cursor:pointer; margin-top:16px; display:flex; align-items:center; justify-content:center; gap:8px; transition:background 0.15s; }
+  .btn-generate:active { background:var(--accent-dark); }
+  .btn-generate:disabled { opacity:0.55; }
+  .spinner { width:18px; height:18px; border:2px solid rgba(255,255,255,0.35); border-top-color:#fff; border-radius:50%; animation:spin 0.7s linear infinite; display:none; }
   @keyframes spin { to { transform:rotate(360deg); } }
 
   /* Preview */
-  .fb-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; margin-bottom:16px; }
-  .fb-header { padding:12px 14px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; }
-  .fb-avatar { width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:white; flex-shrink:0; }
-  .fb-name { font-size:13px; font-weight:600; }
-  .fb-time { font-size:11px; color:var(--text3); }
+  .fb-card { background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; margin-bottom:14px; }
+  .fb-header { padding:12px 14px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px; }
+  .fb-avatar { width:38px; height:38px; border-radius:50%; background:linear-gradient(150deg,#4C46D6 0%,#5B54E8 45%,#8B5CF6 100%); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; color:#fff; flex-shrink:0; }
+  .fb-name { font-size:14px; font-weight:800; color:var(--ink); }
+  .fb-time { font-size:12px; color:var(--sub); }
   .fb-body { padding:14px; }
-  .preview-empty { text-align:center; padding:40px 20px; color:var(--text3); }
+  .preview-empty { text-align:center; padding:36px 16px; color:var(--sub); }
   .preview-empty .ei { font-size:36px; margin-bottom:10px; }
   .preview-empty p { font-size:13px; line-height:1.7; }
-  .post-text { font-size:14px; line-height:1.85; white-space:pre-wrap; color:var(--text); display:none; }
+  .post-text { font-size:15px; line-height:1.8; white-space:pre-wrap; word-break:normal; color:var(--ink); display:none; }
   .post-text.visible { display:block; }
-  .post-textarea { font-size:14px; line-height:1.85; min-height:200px; display:none; border-color:var(--accent); }
+  .post-textarea { word-break:normal; font-size:15px; line-height:1.8; min-height:220px; display:none; border-color:var(--accent); background:var(--card); }
   .post-textarea.visible { display:block; }
 
-  .photo-strip { display:none; gap:4px; padding:0 14px 14px; overflow-x:auto; }
+  .photo-strip { display:none; gap:6px; padding:0 14px 14px; overflow-x:auto; }
   .photo-strip.visible { display:flex; }
-  .photo-strip img { height:80px; width:80px; object-fit:cover; border-radius:8px; flex-shrink:0; }
+  .photo-strip img { height:80px; width:80px; object-fit:cover; border-radius:10px; flex-shrink:0; }
 
   .video-strip { display:none; padding:0 14px 14px; }
   .video-strip.visible { display:block; }
-  .video-strip video { width:100%; border-radius:8px; max-height:180px; background:#000; }
+  .video-strip video { width:100%; border-radius:10px; max-height:180px; background:#000; }
 
-  .char-info { padding:6px 14px 10px; font-size:11px; color:var(--text3); text-align:right; display:none; }
+  .char-info { padding:8px 14px 10px; font-size:12px; color:var(--sub); text-align:right; display:none; border-top:1px solid var(--line); font-variant-numeric:tabular-nums; }
   .char-info.visible { display:block; }
-  .char-info.warn { color:#f7a54a; }
+  .char-info.warn { color:var(--danger); font-weight:700; }
 
-  .actions { display:none; flex-direction:column; gap:10px; }
+  .actions { display:none; flex-direction:column; gap:8px; }
   .actions.visible { display:flex; }
-  .btn { width:100%; padding:14px; border-radius:var(--radius); border:1.5px solid var(--border); font-family:inherit; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; justify-content:center; gap:8px; -webkit-tap-highlight-color:transparent; }
-  .btn-edit { background:var(--surface2); color:var(--text2); }
-  .btn-regen { background:var(--surface2); color:var(--text2); }
-  .btn-post { background:#1877f2; color:white; border-color:#1877f2; }
-  .btn-post:disabled { opacity:0.5; }
+  .btn { width:100%; height:46px; border-radius:14px; border:2px solid var(--line); background:var(--card); color:var(--ink); font-size:15px; font-weight:700; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; justify-content:center; gap:8px; }
+  .btn-edit:active, .btn-regen:active { background:var(--accent-soft); border-color:var(--accent); color:var(--accent); }
+  .btn-post { background:var(--accent); color:#fff; border-color:var(--accent); font-size:16px; }
+  .btn-post:active { background:var(--accent-dark); border-color:var(--accent-dark); }
+  .btn-post:disabled { opacity:0.55; }
 
-  /* Upload */
-  .token-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:16px; }
-  .token-status { font-size:12px; margin-top:8px; display:none; }
-  .token-status.ok { color:var(--success); display:block; }
+  /* 프록시 키 */
+  .token-card { background:var(--bg); border-radius:14px; padding:14px; margin-top:18px; }
+  .token-row { display:flex; gap:8px; }
+  .token-card input[type="password"] { flex:1; min-width:0; background:var(--card); }
+  .token-status { font-size:12px; font-weight:700; margin-top:8px; display:none; }
+  .token-status.ok { color:var(--ok); display:block; }
   .token-status.err { color:var(--danger); display:block; }
-  .btn-save { width:100%; padding:12px; margin-top:10px; background:var(--surface2); border:1.5px solid var(--border); border-radius:var(--radius-sm); color:var(--text2); font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; }
+  .btn-save { flex-shrink:0; width:68px; height:44px; background:var(--card); border:2px solid var(--line); border-radius:9px; color:var(--sub); font-size:13px; font-weight:700; cursor:pointer; }
+  .btn-save:active { background:var(--accent-soft); border-color:var(--accent); color:var(--accent); }
 
   /* Upload progress */
-  .upload-progress { display:none; margin-top:12px; }
+  .upload-progress { display:none; margin-top:4px; margin-bottom:12px; }
   .upload-progress.visible { display:block; }
-  .progress-bar-wrap { background:var(--surface2); border-radius:99px; height:6px; overflow:hidden; margin-top:6px; }
+  .progress-bar-wrap { background:var(--line); border-radius:99px; height:8px; overflow:hidden; margin-top:6px; }
   .progress-bar { height:100%; background:var(--accent); border-radius:99px; width:0%; transition:width 0.3s; }
-  .progress-label { font-size:12px; color:var(--text2); }
+  .progress-label { font-size:13px; font-weight:700; color:var(--sub); }
 
-  .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(80px); background:var(--surface2); border:1px solid var(--border); border-radius:24px; padding:11px 22px; font-size:13px; color:var(--text); opacity:0; transition:all 0.3s; z-index:100; white-space:nowrap; max-width:90vw; text-align:center; }
+  .toast { position:fixed; bottom:calc(24px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%) translateY(80px); background:var(--ink); border-radius:14px; padding:12px 20px; font-size:14px; font-weight:600; color:#fff; box-shadow:0 8px 24px rgba(31,36,55,.18); opacity:0; transition:all 0.3s; z-index:100; max-width:min(90vw, 480px); text-align:center; }
   .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
-  .toast.success { border-color:var(--success); color:var(--success); }
-  .toast.error { border-color:var(--danger); color:var(--danger); }
-  ::-webkit-scrollbar { width:3px; height:3px; }
-  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+  .toast.success { background:var(--ink); color:#8BE59A; }
+  .toast.error { background:var(--danger-soft); color:#C93C3C; box-shadow:0 8px 24px rgba(239,108,108,.2); }
+  ::-webkit-scrollbar { width:4px; height:4px; }
+  ::-webkit-scrollbar-thumb { background:var(--line-strong); border-radius:2px; }
 </style>
 </head>
 <body>
 
-<header>
-  <div class="logo-dot"></div>
+<div id="app">
+<header class="app-header">
+  <div class="header-icon"><img src="icons/icon-42.png" srcset="icons/icon-42.png 1x, icons/icon-84.png 2x" alt="My-Post"></div>
   <h1>投稿 · My-Post</h1>
 </header>
 
@@ -158,8 +195,9 @@
   <button class="step-btn" data-step="2" onclick="goStep(2)"><span class="step-num">3</span>업로드</button>
 </div>
 
+<div class="tab-content">
 <!-- STEP 1 -->
-<div class="panel active" id="panel-0">
+<div class="panel corner-first active" id="panel-0">
   <div class="section-label">소스 유형 선택</div>
   <div class="source-tabs">
     <button class="tab-btn active" data-type="link" onclick="setType('link',this)">🔗 뉴스 링크</button>
@@ -217,13 +255,13 @@
   <!-- Doc -->
   <div id="area-doc" style="display:none;">
     <div class="section-label">파일 업로드</div>
-    <div class="photo-add" style="aspect-ratio:unset; padding:28px; border-radius:var(--radius);">
+    <div class="photo-add doc-drop">
       <input type="file" accept=".pdf,.txt,.docx" id="doc-input" onchange="handleDoc(this)">
       <div style="font-size:28px;">📄</div>
-      <div style="font-size:13px; margin-top:6px; color:var(--text2);">파일을 탭해서 선택</div>
-      <div style="font-size:11px; margin-top:4px; color:var(--text3);">PDF · TXT · DOCX</div>
+      <div class="dd-text">파일을 탭해서 선택</div>
+      <div class="dd-sub">PDF · TXT · DOCX</div>
     </div>
-    <div id="doc-name" style="display:none; margin-top:10px; padding:10px 14px; background:var(--surface2); border-radius:var(--radius-sm); font-size:13px; color:var(--text2);"></div>
+    <div id="doc-name" style="display:none;"></div>
   </div>
 
   <!-- Memo -->
@@ -233,14 +271,16 @@
   </div>
 
   <div class="context-block">
-    <div class="section-label" style="margin-top:16px;">추가 맥락 (선택)</div>
+    <div class="section-label">추가 맥락 (선택)</div>
     <textarea id="input-context" placeholder="강조할 포인트, KT 관련 맥락, 특이사항 등..." style="min-height:70px;"></textarea>
   </div>
 
-  <div class="token-card" style="margin-top:16px; margin-bottom:0;">
+  <div class="token-card">
     <div class="section-label">프록시 키</div>
-    <input type="password" id="input-proxykey" placeholder="프록시 키 (이 기기에 저장됨)" autocomplete="off">
-    <button class="btn-save" onclick="saveProxyKey()">저장</button>
+    <div class="token-row">
+      <input type="password" id="input-proxykey" placeholder="프록시 키 (이 기기에 저장됨)" autocomplete="off">
+      <button class="btn-save" onclick="saveProxyKey()">저장</button>
+    </div>
     <div class="token-status" id="proxykey-status"></div>
   </div>
 
@@ -277,7 +317,7 @@
 </div>
 
 <!-- STEP 3 -->
-<div class="panel" id="panel-2">
+<div class="panel corner-last" id="panel-2">
   <div class="fb-card" id="upload-preview" style="display:none;">
     <div class="fb-header">
       <div class="fb-avatar">OI</div>
@@ -296,9 +336,11 @@
     <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar"></div></div>
   </div>
 
-  <div class="actions visible" style="margin-top:12px;">
+  <div class="actions visible">
     <button class="btn btn-post" id="btn-upload" onclick="postToFacebook()">📤 페이스북에 올리기</button>
   </div>
+</div>
+</div>
 </div>
 
 <div class="toast" id="toast"></div>
