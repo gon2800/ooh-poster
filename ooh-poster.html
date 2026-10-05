@@ -34,6 +34,9 @@
   .header-icon { width:42px; height:42px; border-radius:13px; overflow:hidden; flex-shrink:0; }
   .header-icon img { width:100%; height:100%; object-fit:cover; display:block; }
   .app-header h1 { font-size:20px; font-weight:700; color:var(--ink); letter-spacing:-0.3px; }
+  .btn-settings { margin-left:auto; flex-shrink:0; width:42px; height:42px; border-radius:13px; border:none; background:var(--card); box-shadow:var(--shadow); color:var(--sub); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .btn-settings svg { width:22px; height:22px; display:block; pointer-events:none; }
+  .btn-settings:active { background:var(--accent-soft); color:var(--accent); }
 
   /* Steps = 견출지 탭바 */
   .steps { display:flex; padding:0 10px; background:transparent; }
@@ -156,8 +159,22 @@
   .btn-post:active { background:var(--accent-dark); border-color:var(--accent-dark); }
   .btn-post:disabled { opacity:0.55; }
 
+  /* 설정 바텀 시트 (DESIGN.md 9) */
+  .sheet-backdrop { position:fixed; inset:0; background:rgba(31,36,55,.4); opacity:0; pointer-events:none; transition:opacity .25s; z-index:20; }
+  .sheet-backdrop.show { opacity:1; pointer-events:auto; }
+  .sheet { position:fixed; left:0; right:0; bottom:0; background:var(--card); border-radius:24px 24px 0 0; padding:8px 20px calc(24px + env(safe-area-inset-bottom)); transform:translateY(100%); visibility:hidden; transition:transform .25s cubic-bezier(.32,.72,0,1), visibility 0s .25s; z-index:21; max-width:520px; margin:0 auto; }
+  .sheet.show { transform:translateY(0); visibility:visible; transition:transform .25s cubic-bezier(.32,.72,0,1); }
+  .handle { width:40px; height:4px; background:var(--line); border-radius:3px; margin:6px auto 16px; }
+  .sheet-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .sheet-title { font-size:18px; font-weight:800; color:var(--ink); }
+  .btn-close { height:34px; padding:0 14px; border-radius:9px; border:none; background:var(--bg); color:var(--sub); font-size:14px; font-weight:700; cursor:pointer; }
+  .btn-close:active { background:var(--line); }
+  .sheet-hint { font-size:12px; color:var(--sub); line-height:1.6; margin-top:10px; }
+  .btn-delkey { width:100%; height:44px; margin-top:16px; border-radius:12px; border:none; background:var(--danger-soft); color:#C93C3C; font-size:14px; font-weight:700; cursor:pointer; }
+  .btn-delkey:active { background:#FAD9D9; }
+
   /* 프록시 키 */
-  .token-card { background:var(--bg); border-radius:14px; padding:14px; margin-top:18px; }
+  .token-card { background:var(--bg); border-radius:14px; padding:14px; }
   .token-row { display:flex; gap:8px; }
   .token-card input[type="password"] { flex:1; min-width:0; background:var(--card); }
   .token-status { font-size:12px; font-weight:700; margin-top:8px; display:none; }
@@ -187,6 +204,9 @@
 <header class="app-header">
   <div class="header-icon"><img src="icons/icon-42.png" srcset="icons/icon-42.png 1x, icons/icon-84.png 2x" alt="My-Post"></div>
   <h1>投稿 · My-Post</h1>
+  <button class="btn-settings" id="btn-settings" onclick="openSettings()" aria-label="설정" title="설정">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+  </button>
 </header>
 
 <div class="steps">
@@ -275,15 +295,6 @@
     <textarea id="input-context" placeholder="강조할 포인트, KT 관련 맥락, 특이사항 등..." style="min-height:70px;"></textarea>
   </div>
 
-  <div class="token-card">
-    <div class="section-label">프록시 키</div>
-    <div class="token-row">
-      <input type="password" id="input-proxykey" placeholder="프록시 키 (이 기기에 저장됨)" autocomplete="off">
-      <button class="btn-save" onclick="saveProxyKey()">저장</button>
-    </div>
-    <div class="token-status" id="proxykey-status"></div>
-  </div>
-
   <button class="btn-generate" id="btn-gen" onclick="generate()">
     <div class="spinner" id="spinner"></div>
     <span id="gen-label">✨ 포스팅 생성</span>
@@ -343,6 +354,26 @@
 </div>
 </div>
 
+<!-- 설정 시트 -->
+<div class="sheet-backdrop" id="settings-backdrop" onclick="closeSettings()"></div>
+<div class="sheet" id="settings-sheet" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+  <div class="handle"></div>
+  <div class="sheet-head">
+    <div class="sheet-title" id="settings-title">설정</div>
+    <button class="btn-close" onclick="closeSettings()">닫기</button>
+  </div>
+  <div class="token-card">
+    <div class="section-label">프록시 키</div>
+    <div class="token-row">
+      <input type="password" id="input-proxykey" placeholder="프록시 키 (이 기기에 저장됨)" autocomplete="off">
+      <button class="btn-save" onclick="saveProxyKey()">저장</button>
+    </div>
+    <div class="token-status" id="proxykey-status"></div>
+  </div>
+  <div class="sheet-hint">키는 이 브라우저에만 저장되고 서버로는 Worker 호출 때만 보냅니다.</div>
+  <button class="btn-delkey" onclick="deleteProxyKey()">이 기기에서 키 삭제</button>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -365,7 +396,29 @@ window.addEventListener('load', () => {
   }
   const k = localStorage.getItem('ooh_proxy_key');
   if (k) { document.getElementById('input-proxykey').value = k; proxyKey = k; showProxyKeyStatus(true); }
+  else openSettings();
 });
+
+// 설정 시트
+function openSettings() {
+  document.getElementById('settings-backdrop').classList.add('show');
+  document.getElementById('settings-sheet').classList.add('show');
+}
+function closeSettings() {
+  document.getElementById('settings-backdrop').classList.remove('show');
+  document.getElementById('settings-sheet').classList.remove('show');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSettings(); });
+
+// 이 브라우저에 저장된 키만 삭제
+function deleteProxyKey() {
+  if (!confirm('이 기기(브라우저)에 저장된 프록시 키를 삭제할까요?')) return;
+  localStorage.removeItem('ooh_proxy_key');
+  proxyKey = '';
+  document.getElementById('input-proxykey').value = '';
+  document.getElementById('proxykey-status').className = 'token-status';
+  showToast('이 기기에서 프록시 키를 삭제했습니다');
+}
 
 function goStep(n) {
   document.querySelectorAll('.panel').forEach((p,i) => p.classList.toggle('active', i===n));
@@ -459,7 +512,7 @@ async function handleDoc(input) {
 
 // Generate
 async function generate() {
-  if (!proxyKey) { showToast('프록시 키를 먼저 저장해주세요','error'); showProxyKeyStatus(false); return; }
+  if (!proxyKey) { showToast('프록시 키를 먼저 저장해주세요','error'); showProxyKeyStatus(false); openSettings(); return; }
   const btn = document.getElementById('btn-gen');
   const spinner = document.getElementById('spinner');
   const label = document.getElementById('gen-label');
@@ -674,7 +727,7 @@ function utf8ToBase64(str) {
 }
 
 async function postToFacebook() {
-  if (!proxyKey) { showToast('프록시 키를 먼저 저장해주세요','error'); showProxyKeyStatus(false); return; }
+  if (!proxyKey) { showToast('프록시 키를 먼저 저장해주세요','error'); showProxyKeyStatus(false); openSettings(); return; }
   const pt=document.getElementById('post-text');
   const ta=document.getElementById('post-textarea');
   const message=(isEditing?ta.value:pt.textContent).trim();
