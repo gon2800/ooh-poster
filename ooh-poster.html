@@ -114,6 +114,8 @@ textarea.short{min-height:72px}
 .photo-remove{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:rgba(31,36,55,.6);border:none;color:#fff;
   font-size:14px;display:flex;align-items:center;justify-content:center}
 .photo-grid .drop{aspect-ratio:1;padding:0}
+.note{display:flex;gap:6px;align-items:flex-start;font-size:var(--fs-xs);font-weight:500;color:var(--sub);line-height:1.55;margin:0 2px var(--sp-1)}
+.note .ico{font-size:14px;margin-top:1px}
 .count{font-size:var(--fs-xs);font-weight:500;color:var(--sub);text-align:right;margin-top:var(--sp-1)}
 
 .video-preview{display:none;margin-top:var(--sp-1);border-radius:14px;overflow:hidden;background:var(--bg)}
@@ -296,12 +298,13 @@ textarea.short{min-height:72px}
 
   <!-- 사진·동영상 -->
   <div class="block" id="area-media" style="display:none">
-    <div class="label">사진·동영상 <small>사진 최대 5장 또는 동영상 1개</small></div>
+    <div class="label">사진·동영상</div>
+    <div class="note"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><span>사진은 5장까지, 동영상은 1개(100MB 이하)예요.<br>한 글에 사진과 동영상을 같이 올릴 수는 없어요.</span></div>
     <div class="drop" id="media-drop">
       <input type="file" accept="image/*,video/*" multiple onchange="handleMedia(this)">
       <svg class="ico" viewBox="0 0 24 24"><path d="M16 5h6"/><path d="M19 2v6"/><path d="M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/><circle cx="9" cy="9" r="2"/></svg>
       <div class="t">눌러서 사진·동영상 고르기</div>
-      <div class="s">사진 최대 5장 또는 동영상 1개 (100MB 이하)</div>
+      <div class="s">사진 여러 장 또는 동영상 1개</div>
     </div>
     <div class="photo-grid" id="photo-grid" style="display:none"></div>
     <div class="count" id="photo-count" style="display:none"></div>
@@ -450,7 +453,7 @@ textarea.short{min-height:72px}
   </div>
   <div class="key-hint">키는 이 기기에만 저장되고, 문구 만들기·올리기 때만 프록시로 보냅니다.</div>
   <button class="key-del" id="key-del" onclick="deleteProxyKey()">이 기기에서 키 삭제</button>
-  <div class="ver">My Post v1.1.1</div>
+  <div class="ver">My Post v1.1.2</div>
 </div>
 
 <!-- 올리기 확인 시트 -->
@@ -623,7 +626,7 @@ function handleMedia(input) {
   const images = files.filter(f => f.type.startsWith('image/'));
   if (videos.length) {
     // 페이스북은 사진과 동영상을 한 게시물에 같이 못 올림 → 동영상 1개만
-    if (videos.length>1 || images.length) showToast('사진과 동영상은 함께 못 올려요. 동영상 1개만 넣었어요','error');
+    if (videos.length>1 || images.length) showToast('한 글에 사진과 동영상을 같이 못 올려요. 동영상 1개만 넣었어요','error');
     else if (photos.length) showToast('사진 대신 동영상으로 바꿨어요');
     setVideo(videos[0]);
     return;
