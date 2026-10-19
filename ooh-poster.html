@@ -197,7 +197,8 @@ textarea.short{min-height:72px}
 
 .btn-buffer{background:#0A66C2;margin-top:var(--sp-2)}
 .btn-buffer:active{background:#084E96}
-.buffer-hint{font-size:var(--fs-xs);color:var(--sub);text-align:center;margin:var(--sp-1) 0 0}
+.buffer-hint{font-size:var(--fs-xs);color:var(--sub);text-align:center;margin:var(--sp-1) 0 0;line-height:1.7}
+.buffer-hint a{color:var(--accent-ink);font-weight:700}
 .progress{display:none;margin-top:var(--sp-2)}
 .progress.on{display:block}
 .progress-label{font-size:var(--fs-sm);font-weight:600;color:var(--sub)}
@@ -419,11 +420,11 @@ textarea.short{min-height:72px}
       <svg class="ico" viewBox="0 0 24 24"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg>
       <span id="upload-label">선택한 곳에 올리기</span>
     </button>
-    <button class="btn-main btn-buffer" id="btn-buffer" onclick="openBuffer()" style="display:none">
+    <a class="btn-main btn-buffer" id="btn-buffer" href="https://publish.buffer.com" target="_blank" rel="noopener" style="display:none;text-decoration:none">
       <svg class="ico" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
       <span>Buffer 앱 열어서 링크드인 게시</span>
-    </button>
-    <div class="buffer-hint" id="buffer-hint" style="display:none">대기열의 글에서 Publish Now를 누르면 링크드인에 올라가요</div>
+    </a>
+    <div class="buffer-hint" id="buffer-hint" style="display:none">대기열의 글에서 Publish Now를 누르면 링크드인에 올라가요<br><a href="https://publish.buffer.com" target="_blank" rel="noopener">앱이 안 열리면 Buffer 웹으로 열기</a></div>
     <div class="btn-row" id="after-row" style="display:none">
       <button class="btn-sub" onclick="startNew()"><svg class="ico" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>새 글 쓰기</button>
     </div>
@@ -461,7 +462,7 @@ textarea.short{min-height:72px}
   </div>
   <div class="key-hint">키는 이 기기에만 저장되고, 문구 만들기·올리기 때만 프록시로 보냅니다.</div>
   <button class="key-del" id="key-del" onclick="deleteProxyKey()">이 기기에서 키 삭제</button>
-  <div class="ver">My Post v1.1.5</div>
+  <div class="ver">My Post v1.1.6</div>
 </div>
 
 <!-- 올리기 확인 시트 -->
@@ -1075,16 +1076,20 @@ async function postToLinkedIn(text) {
   return data;
 }
 
-/* Buffer 열기: 안드로이드는 Buffer 앱(org.buffer.android)을 바로 실행, 앱이 없거나 PC면 Buffer 웹 */
+/* Buffer 열기: 안드로이드는 Buffer 웹 주소를 Buffer 앱(org.buffer.android)에 넘겨서 열고,
+   앱이 그 주소를 안 받거나 없으면 크롬이 Buffer 웹으로 대신 연다. PC는 웹. (진짜 링크라 설치 앱 안에서도 동작) */
 const BUFFER_WEB = 'https://publish.buffer.com';
-function openBuffer() {
+function setupBufferLink() {
+  const a = document.getElementById('btn-buffer');
   if (/Android/i.test(navigator.userAgent)) {
-    location.href = 'intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;'
-      + 'package=org.buffer.android;S.browser_fallback_url=' + encodeURIComponent(BUFFER_WEB) + ';end';
+    a.href = 'intent://publish.buffer.com/#Intent;scheme=https;package=org.buffer.android;'
+      + 'S.browser_fallback_url=' + encodeURIComponent(BUFFER_WEB) + ';end';
+    a.removeAttribute('target');
   } else {
-    window.open(BUFFER_WEB, '_blank', 'noopener');
+    a.href = BUFFER_WEB; a.target = '_blank';
   }
 }
+setupBufferLink();
 
 function startNew() {
   if (!confirm('지금 글을 지우고 새로 시작할까요?')) return;
