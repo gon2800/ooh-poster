@@ -453,7 +453,7 @@ textarea.short{min-height:72px}
   </div>
   <div class="key-hint">키는 이 기기에만 저장되고, 문구 만들기·올리기 때만 프록시로 보냅니다.</div>
   <button class="key-del" id="key-del" onclick="deleteProxyKey()">이 기기에서 키 삭제</button>
-  <div class="ver">My Post v1.1.3</div>
+  <div class="ver">My Post v1.1.4</div>
 </div>
 
 <!-- 올리기 확인 시트 -->
@@ -1058,6 +1058,7 @@ async function postToLinkedIn(text) {
   const err = (typeof data.error==='string' ? data.error : data.error?.message)
     || (Array.isArray(data.errors) && data.errors[0]?.message)
     || (cp && cp.message && !cp.post ? cp.message : '');
+  if (err && /token|unauthori[sz]ed|not authenticated/i.test(err)) throw new Error('Buffer 연결 키가 만료됐어요 (프록시의 Buffer 키 교체 필요)');
   if (!res.ok || err) throw new Error(err || `HTTP ${res.status}`);
   return data;
 }
