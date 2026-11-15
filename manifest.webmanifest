@@ -1,7 +1,7 @@
 {
   "name": "My Post",
   "short_name": "My Post",
-  "description": "OOH Insight Now 페이스북 포스팅 생성·업로드",
+  "description": "OOH Insight Lab 페이스북 포스팅 생성·업로드",
   "start_url": "ooh-poster.html",
   "scope": "./",
   "display": "standalone",
